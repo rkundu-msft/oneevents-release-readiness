@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Events — P1 Bug Release Readiness Report</title>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', -apple-system, sans-serif; background: #f0f2f5; color: #1a1a2e; line-height: 1.5; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+    .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 30px 40px; border-radius: 12px; margin-bottom: 24px; }
+    .header h1 { font-size: 24px; margin-bottom: 4px; }
+    .header .subtitle { opacity: 0.8; font-size: 14px; }
+    .header .gen-date { opacity: 0.6; font-size: 12px; margin-top: 8px; }
+
+    .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center; }
+    .card .number { font-size: 36px; font-weight: 700; }
+    .card .label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+    .card.critical .number { color: #e74c3c; }
+    .card.warn .number { color: #e67e22; }
+    .card.must .number { color: #e74c3c; }
+    .card.should .number { color: #f39c12; }
+    .card.ok .number { color: #27ae60; }
+
+    .section { background: white; border-radius: 10px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 24px; }
+    .section h2 { font-size: 18px; margin-bottom: 16px; color: #1a1a2e; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+
+    .bar-row { display: flex; align-items: center; margin-bottom: 8px; }
+    .bar-label { width: 90px; font-size: 12px; color: #666; text-align: right; padding-right: 12px; flex-shrink: 0; }
+    .bar-track { flex: 1; background: #f0f2f5; border-radius: 4px; height: 28px; }
+    .bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600; min-width: 24px; transition: width 0.3s; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead { background: #f8f9fa; }
+    th { padding: 10px 8px; text-align: left; font-weight: 600; color: #555; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #eee; }
+    td { padding: 8px; border-bottom: 1px solid #f0f0f0; }
+    td.title { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    tr:hover { background: #f8f9fa; }
+    a { color: #2980b9; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .badge.must { background: #fde8e8; color: #e74c3c; }
+    .badge.should { background: #fff3e0; color: #e67e22; }
+    .badge.other { background: #f0f0f0; color: #888; }
+
+    .em-section { margin-bottom: 32px; border: 1px solid #e8e8e8; border-radius: 8px; overflow: hidden; }
+    .em-header { background: #f8f9fa; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .em-header h3 { font-size: 16px; color: #1a1a2e; }
+    .em-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+    .stat { font-size: 12px; background: #eee; padding: 2px 10px; border-radius: 12px; }
+    .must-stat { background: #fde8e8; color: #e74c3c; }
+    .should-stat { background: #fff3e0; color: #e67e22; }
+
+    .actions { padding: 12px 20px; background: #fffbf0; border-top: 1px solid #f0e8d0; }
+    .actions h4 { font-size: 13px; color: #333; margin-bottom: 6px; }
+    .actions ul { padding-left: 20px; }
+    .actions li { font-size: 13px; margin-bottom: 4px; }
+    .action-critical { color: #c0392b; }
+    .action-warn { color: #e67e22; }
+    .action-ok { color: #27ae60; }
+
+    .em-section table { margin: 0; }
+
+    .no-date { color: #e74c3c; font-weight: 600; font-size: 11px; }
+
+    .r36-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .r36-box { border: 1px solid #eee; border-radius: 8px; padding: 16px; }
+    .r36-box.must-box { border-left: 4px solid #e74c3c; }
+    .r36-box.should-box { border-left: 4px solid #f39c12; }
+    .r36-box h4 { margin-bottom: 8px; }
+
+    .footer { text-align: center; padding: 20px; color: #999; font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+    <h1>One Events — P1 Bug Release Readiness Report</h1>
+    <div class="subtitle"></div>
+    <div class="gen-date">Generated: February 12, 2026 01:00</div>
+</div>
+
+<!-- Dashboard Cards -->
+<div class="dashboard">
+    <div class="card critical">
+        <div class="number">18</div>
+        <div class="label">Total P1 Bugs</div>
+    </div>
+    <div class="card must">
+        <div class="number">4</div>
+        <div class="label">R3.6-Must</div>
+    </div>
+    <div class="card should">
+        <div class="number">18</div>
+        <div class="label">R3.6-Should</div>
+    </div>
+    <div class="card warn">
+        <div class="number">0</div>
+        <div class="label">No R3.6 Tag</div>
+    </div>
+    <div class="card critical">
+        <div class="number">3</div>
+        <div class="label">Aging > 60 days</div>
+    </div>
+    <div class="card warn">
+        <div class="number">16</div>
+        <div class="label">No Target Date</div>
+    </div>
+    <div class="card ok">
+        <div class="number">0</div>
+        <div class="label">Unassigned</div>
+    </div>
+</div>
+
+<!-- R3.6 Tag Analysis -->
+<div class="two-col">
+    <div class="section">
+        <h2>R3.6 Tag Distribution</h2>
+        <div class="bar-row">
+            <span class="bar-label">R3.6-Must</span>
+            <div class="bar-track">
+                <div class="bar-fill" style="width:22%;background:#e74c3c">4</div>
+            </div>
+        </div>
+        <div class="bar-row">
+            <span class="bar-label">R3.6-Should</span>
+            <div class="bar-track">
+                <div class="bar-fill" style="width:100%;background:#f39c12">18</div>
+            </div>
+        </div>
+        <div class="bar-row">
+            <span class="bar-label">No R3.6 tag</span>
+            <div class="bar-track">
+                <div class="bar-fill" style="width:0%;background:#bbb">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="section">
+        <h2>Bug Aging Distribution</h2>
+        
+            <div class="bar-row">
+                <span class="bar-label">0-7 days</span>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width:100.0%;background:#27ae60">6</div>
+                </div>
+            </div>
+            <div class="bar-row">
+                <span class="bar-label">8-14 days</span>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width:66.66666666666666%;background:#27ae60">4</div>
+                </div>
+            </div>
+            <div class="bar-row">
+                <span class="bar-label">15-30 days</span>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width:83.33333333333334%;background:#f39c12">5</div>
+                </div>
+            </div>
+            <div class="bar-row">
+                <span class="bar-label">31-60 days</span>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width:0.0%;background:#e67e22">0</div>
+                </div>
+            </div>
+            <div class="bar-row">
+                <span class="bar-label">61-90 days</span>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width:33.33333333333333%;background:#e74c3c">2</div>
+                </div>
+            </div>
+            <div class="bar-row">
+                <span class="bar-label">90+ days</span>
+                <div class="bar-track">
+                    <div class="bar-fill" style="width:16.666666666666664%;background:#c0392b">1</div>
+                </div>
+            </div>
+    </div>
+</div>
+
+<!-- R3.6-Must Bugs -->
+<div class="section">
+    <h2>R3.6-Must Bugs (4 items) — Release Blockers</h2>
+    
+    <table><thead><tr><th>ID</th><th>Title</th><th>State</th><th>Severity</th><th>Age</th><th>Assigned To</th><th>EM</th><th>Target Date</th><th>Tag</th></tr></thead><tbody><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5081176" target="_blank">5081176</a></td>
+            <td class="title">[Ring 3 release blocker] OneEvents - Q&amp;A doesn&#x27;t work beyond 1k when s</td>
+            <td>Active</td>
+            <td>1 - Critical</td>
+            <td style="color:#f39c12;font-weight:700">29d</td>
+            <td>Sunil Rao</td>
+            <td>Srikanth Adi</td>
+            <td>2026-01-16</td>
+            <td><span class="badge must">R3.6-Must</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5137502" target="_blank">5137502</a></td>
+            <td class="title">[Ring 3 release blocker] Register button not working in landing page i</td>
+            <td>Blocked</td>
+            <td>1 - Critical</td>
+            <td style="color:#27ae60;font-weight:700">8d</td>
+            <td>Andichamy Gurusamy</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge must">R3.6-Must</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5152910" target="_blank">5152910</a></td>
+            <td class="title">[Ring 3 release blocker] OneEvents - Create event failure for Broadcas</td>
+            <td>Proposed</td>
+            <td>2 - High</td>
+            <td style="color:#27ae60;font-weight:700">1d</td>
+            <td>John Chow</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge must">R3.6-Must</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5153362" target="_blank">5153362</a></td>
+            <td class="title">[Ring 3 release blocker] Without new email template for registration o</td>
+            <td>Active</td>
+            <td>1 - Critical</td>
+            <td style="color:#27ae60;font-weight:700">1d</td>
+            <td>Pathivada Yashwanth</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge must">R3.6-Must</span></td>
+        </tr></tbody></table>
+</div>
+
+<!-- R3.6-Should Bugs -->
+<div class="section">
+    <h2>R3.6-Should Bugs (18 items) — High Priority</h2>
+    
+    <table><thead><tr><th>ID</th><th>Title</th><th>State</th><th>Severity</th><th>Age</th><th>Assigned To</th><th>EM</th><th>Target Date</th><th>Tag</th></tr></thead><tbody><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/4770696" target="_blank">4770696</a></td>
+            <td class="title">One Events: When a draft event is published, it takes some time to ref</td>
+            <td>Proposed</td>
+            <td>2 - High</td>
+            <td style="color:#e74c3c;font-weight:700">156d</td>
+            <td>Mukul Singh</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/4994169" target="_blank">4994169</a></td>
+            <td class="title">When events get updated it takes a long time for it to show up on happ</td>
+            <td>Proposed</td>
+            <td>3 - Medium</td>
+            <td style="color:#e74c3c;font-weight:700">72d</td>
+            <td>Dharmendra Thotakura</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5005563" target="_blank">5005563</a></td>
+            <td class="title">External presenter is not showing up the event card ..I have a interna</td>
+            <td>Active</td>
+            <td>3 - Medium</td>
+            <td style="color:#e74c3c;font-weight:700">69d</td>
+            <td>Sunil Rao</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5081176" target="_blank">5081176</a></td>
+            <td class="title">[Ring 3 release blocker] OneEvents - Q&amp;A doesn&#x27;t work beyond 1k when s</td>
+            <td>Active</td>
+            <td>1 - Critical</td>
+            <td style="color:#f39c12;font-weight:700">29d</td>
+            <td>Sunil Rao</td>
+            <td>Srikanth Adi</td>
+            <td>2026-01-16</td>
+            <td><span class="badge must">R3.6-Must</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5099641" target="_blank">5099641</a></td>
+            <td class="title">OneEvents: Spamming issue in case of Shared mailbox scenario. On just </td>
+            <td>Proposed</td>
+            <td>3 - Medium</td>
+            <td style="color:#f39c12;font-weight:700">23d</td>
+            <td>Abhishek Tiwari</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5102158" target="_blank">5102158</a></td>
+            <td class="title">[One Events] Collaborative Event does not have the right lobby policy </td>
+            <td>Proposed</td>
+            <td>1 - Critical</td>
+            <td style="color:#f39c12;font-weight:700">22d</td>
+            <td>Jyoti Prakash Sahoo</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5108123" target="_blank">5108123</a></td>
+            <td class="title">OneEvents - Even though I have not made an event discoverable, I was a</td>
+            <td>Proposed</td>
+            <td>3 - Medium</td>
+            <td style="color:#f39c12;font-weight:700">21d</td>
+            <td>Jacob Nazarenko</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5120103" target="_blank">5120103</a></td>
+            <td class="title">[OneEvents][Engage Owned] Join button shows up in Event Card even thou</td>
+            <td>Active</td>
+            <td>2 - High</td>
+            <td style="color:#f39c12;font-weight:700">15d</td>
+            <td>Micaela Mengen</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5127177" target="_blank">5127177</a></td>
+            <td class="title">Enable broadcast with registration and its old manage mode and not new</td>
+            <td>Proposed</td>
+            <td>3 - Medium</td>
+            <td style="color:#27ae60;font-weight:700">13d</td>
+            <td>Srikanth Adi</td>
+            <td>Srikanth Adi</td>
+            <td>2026-02-11</td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5129868" target="_blank">5129868</a></td>
+            <td class="title">One Events: Few of the shared mailboxes missing in the list even thoug</td>
+            <td>Active</td>
+            <td>3 - Medium</td>
+            <td style="color:#27ae60;font-weight:700">12d</td>
+            <td>Sohini Bhattacharya</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5134418" target="_blank">5134418</a></td>
+            <td class="title">[OneEvents] Event cards do not show organizer actions on first load</td>
+            <td>Proposed</td>
+            <td>3 - Medium</td>
+            <td style="color:#27ae60;font-weight:700">9d</td>
+            <td>Sunil Rao</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5137502" target="_blank">5137502</a></td>
+            <td class="title">[Ring 3 release blocker] Register button not working in landing page i</td>
+            <td>Blocked</td>
+            <td>1 - Critical</td>
+            <td style="color:#27ae60;font-weight:700">8d</td>
+            <td>Andichamy Gurusamy</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge must">R3.6-Must</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5146809" target="_blank">5146809</a></td>
+            <td class="title">[OneEvents] When scrolled down to Q&amp;amp;A in event landing page, unabl</td>
+            <td>Active</td>
+            <td>3 - Medium</td>
+            <td style="color:#27ae60;font-weight:700">4d</td>
+            <td>Andichamy Gurusamy</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5151847" target="_blank">5151847</a></td>
+            <td class="title">OneEvents – I registered for an event and noticed it never appeared un</td>
+            <td>Proposed</td>
+            <td>3 - Medium</td>
+            <td style="color:#27ae60;font-weight:700">2d</td>
+            <td>Sunil Rao</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5152910" target="_blank">5152910</a></td>
+            <td class="title">[Ring 3 release blocker] OneEvents - Create event failure for Broadcas</td>
+            <td>Proposed</td>
+            <td>2 - High</td>
+            <td style="color:#27ae60;font-weight:700">1d</td>
+            <td>John Chow</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge must">R3.6-Must</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5152939" target="_blank">5152939</a></td>
+            <td class="title">OneEvents - Duplicate event failure with Registration questions</td>
+            <td>Proposed</td>
+            <td>2 - High</td>
+            <td style="color:#27ae60;font-weight:700">1d</td>
+            <td>Pradeep Bhaduria</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5153362" target="_blank">5153362</a></td>
+            <td class="title">[Ring 3 release blocker] Without new email template for registration o</td>
+            <td>Active</td>
+            <td>1 - Critical</td>
+            <td style="color:#27ae60;font-weight:700">1d</td>
+            <td>Pathivada Yashwanth</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge must">R3.6-Must</span></td>
+        </tr><tr>
+            <td><a href="https://dev.azure.com/domoreexp/MSTeams/_workitems/edit/5153615" target="_blank">5153615</a></td>
+            <td class="title">OneEvents - Investigate Discover Page load failure</td>
+            <td>Proposed</td>
+            <td>2 - High</td>
+            <td style="color:#27ae60;font-weight:700">1d</td>
+            <td>Pradeep Bhaduria</td>
+            <td>Srikanth Adi</td>
+            <td><span class="no-date">NOT SET</span></td>
+            <td><span class="badge should">R3.6-Should</span></td>
+        </tr></tbody></table>
+</div>
+
+<!-- Untagged Bugs -->
+<div class="section">
+    <h2>Bugs Without R3.6 Tag (0 items) — Triage Required</h2>
+    <p style="color:#e67e22;margin-bottom:12px">These P1 bugs need R3.6 classification. EMs must tag as R3.6-Must, R3.6-Should, or explicitly defer.</p>
+    
+</div>
+
+<div class="footer">
+    One Events Release Readiness Report | Generated February 12, 2026 01:00 | 18 P1 Bugs
+</div>
+
+</div>
+</body>
+</html>
